@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const stripe = require('stripe')('sk_test_51PLdGEI1V2N8WTtNy6BuPHn7f0sObaigpAnM6Pe2r2m5DzKEn6IBd7HKpMwbLeYpe7yFp8QLtZ3mb0nWQTQK40IG008n1y7hhb')
 const port = 3000
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
@@ -30,6 +31,39 @@ async function run() {
         const productCollection = client.db('iceServer').collection('product')
         const addCartCollection = client.db('iceServer').collection('addCart')
         const reviewCollection = client.db('iceServer').collection('reviews')
+
+
+
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100); // Convert to cents
+            console.log(amount, 'this amount');
+
+            // Check if the amount meets Stripe's minimum requirement
+            const MINIMUM_AMOUNT = 1; // Minimum amount in cents for USD, adjust as needed
+
+            if (amount < MINIMUM_AMOUNT) {
+                return res.status(400).json({
+                    error: `The amount must be at least $${MINIMUM_AMOUNT / 100} USD.`
+                });
+            }
+
+            try {
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount: amount,
+                    currency: 'usd',
+                    payment_method_types: ['card']
+                });
+
+                res.send({
+                    clientSecret: paymentIntent.client_secret
+                });
+            } catch (error) {
+                console.error("Error creating payment intent:", error);
+                res.status(500).json({ error: error.message });
+            }
+        });
+
 
 
         //  product related api
@@ -90,14 +124,14 @@ async function run() {
             const query = { productId: id }
             const result = await reviewCollection.find(query).toArray();
             res.send(result)
-          })
+        })
 
-          app.get('/reviews', async (req, res) => {
+        app.get('/reviews', async (req, res) => {
             const cursor = reviewCollection.find()
             const result = await cursor.toArray()
             res.send(result)
         })
-      
+
 
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
