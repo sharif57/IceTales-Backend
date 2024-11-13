@@ -31,6 +31,7 @@ async function run() {
         const productCollection = client.db('iceServer').collection('product')
         const addCartCollection = client.db('iceServer').collection('addCart')
         const reviewCollection = client.db('iceServer').collection('reviews')
+        const blogsCollection = client.db('iceServer').collection('blogs')
 
 
 
@@ -110,6 +111,13 @@ async function run() {
             console.log(result);
         })
 
+        app.delete('/deleteItem/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await addCartCollection.deleteOne(query)
+            res.send(result)
+        })
+
         // reviews api
 
         app.post('/reviews', async (req, res) => {
@@ -131,6 +139,14 @@ async function run() {
             const result = await cursor.toArray()
             res.send(result)
         })
+
+        app.get('/blogs', async (req, res) => {
+            const cursor = blogsCollection.find()
+            const result = await cursor.toArray()
+            res.send(result)
+        })
+
+        
 
 
         // Connect the client to the server	(optional starting in v4.7)
